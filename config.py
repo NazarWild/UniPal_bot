@@ -30,4 +30,9 @@ keyboard_3.add(types.KeyboardButton(text='3'), types.KeyboardButton(text='4'), t
 
 remove_reply_keyboard = telebot.types.ReplyKeyboardRemove()
 
+weather_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+weather_keyboard.add(types.KeyboardButton("Kyiv"))
+weather_keyboard.add(types.KeyboardButton("Lviv"))
+weather_keyboard.add(types.KeyboardButton("Odessa"))
+
 #######################################################################################################################
