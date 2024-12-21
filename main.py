@@ -98,6 +98,91 @@ def my_dino_buttons(call):
         bot.send_message(call.message.chat.id, text="Таблиця кнопок №3", reply_markup=keyboard_3)
 
 
+def create_buttons(button_type, count):
+    if button_type == 'inline':
+        keyboard = types.InlineKeyboardMarkup()
+        for i in range(count):
+            button = types.InlineKeyboardButton(f"Кнопка {i}", callback_data=f"btn_{i}")
+            keyboard.add(button)
+    else:  # reply
+        keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        for i in range(count):
+            keyboard.add(types.KeyboardButton(f"Кнопка {i}"))
+
+    return keyboard
+
+
+@bot.message_handler(commands=['create_buttons'])
+def ask_button_details(message):
+    msg = bot.send_message(message.chat.id, "Введіть тип кнопок (inline/reply) та кількість через пробіл (наприклад: "
+                                            "inline 3):")
+    bot.register_next_step_handler(msg, process_button_request)
+
+
+def process_button_request(message):
+    try:
+        button_type, count = message.text.split()
+        count = int(count)
+
+        if button_type not in ['inline', 'reply']:
+            raise ValueError("Неправильний тип кнопок. Використовуйте 'inline' або 'reply'.")
+
+        buttons = create_buttons(button_type, count)
+        bot.send_message(message.chat.id, "Ваші кнопки готові:", reply_markup=buttons)
+
+    except (ValueError, IndexError):
+        bot.send_message(message.chat.id, "Помилка! Введіть коректний тип (inline/reply) та кількість кнопок.")
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('btn_'))
+def button_callback(call):
+    bot.send_message(call.message.chat.id, f"Ви натиснули {call.data.replace('btn_', 'Кнопка ')}")
+
+
+def create_currency_buttons():
+    keyboard = types.InlineKeyboardMarkup()
+    currencies = ["USD", "EUR", "UAH"]
+    for currency in currencies:
+        button = types.InlineKeyboardButton(
+            text=f"Оплатити у {currency}",
+            callback_data=f"pay_{currency}"
+        )
+        keyboard.add(button)
+    return keyboard
+
+
+@bot.message_handler(commands=['currency'])
+def start_payment(message):
+    bot.send_message(
+        message.chat.id,
+        "Оберіть валюту для оплати:",
+        reply_markup=create_currency_buttons()
+    )
+
+
+def generate_invoice(currency):
+    amount = 100
+    exchange_rate = {
+        "USD": 1,
+        "EUR": 0.92,
+        "UAH": 37
+    }
+    total = amount * exchange_rate.get(currency, 1)
+    return f"{total:.2f} {currency}"
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('pay_'))
+def process_payment(call):
+    currency = call.data.split('_')[1]
+    invoice = generate_invoice(currency)  # Функція генерації рахунку
+    bot.send_message(call.message.chat.id, f"Ваш рахунок для оплати в {currency}:\n{invoice}")
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def fallback_handler(call):
+    bot.answer_callback_query(call.id, "Невідома команда. Будь ласка, спробуйте ще раз.")
+
+
 # @bot.message_handler(content_types=['text', 'photo', 'document'])
 # def check_on(message):
 #     message_text = message.text
